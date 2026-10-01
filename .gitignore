@@ -1,0 +1,7 @@
+node_modules/
+dist/
+data/pglite-db/
+data/skills/
+.spartan/
+*.env
+.env*
