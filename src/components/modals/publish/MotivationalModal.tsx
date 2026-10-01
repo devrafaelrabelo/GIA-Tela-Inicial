@@ -111,11 +111,11 @@ export const MotivationalModal: React.FC<MotivationalModalProps> = ({ isOpen, on
 
       showToast('Pensamento do Dia publicado com sucesso no Card 1! 🌟', 'success');
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Falha ao publicar pensamento do dia no servidor:', err);
-      const msg = err?.message || 'Falha ao salvar no banco de dados do servidor.';
-      setSubmitError(msg);
-      showToast(msg, 'error');
+      const errMsg = err instanceof Error ? err.message : 'Falha ao salvar no banco de dados do servidor.';
+      setSubmitError(errMsg);
+      showToast(errMsg, 'error');
     } finally {
       setIsSubmitting(false);
     }

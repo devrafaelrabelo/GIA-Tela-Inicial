@@ -45,7 +45,7 @@ export const AnnouncementsSection: React.FC = () => {
       if (announcementVisibilityFilter === 'members_only' && item.visibility !== 'members_only') return false;
 
       if (localSearch.trim()) {
-        const commentsText = (item.comments || []).map((c) => `${c.author || ''} ${c.text || c.content || ''}`).join(' ');
+        const commentsText = (item.comments || []).map((c) => `${c.author || ''} ${c.content || ''}`).join(' ');
         const searchableText = `${item.title} ${item.content} ${item.summary || ''} ${item.category || ''} ${item.author || ''} ${item.authorDepartment || ''} ${commentsText}`;
         if (!matchesSeparatedWords(searchableText, localSearch)) return false;
       }

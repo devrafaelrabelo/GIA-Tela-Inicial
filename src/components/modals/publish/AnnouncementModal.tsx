@@ -224,8 +224,8 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
         setCtaOpenNewTab(editingAnnouncement.actionButtonOpenNewTab !== false);
 
         // Mídia
-        setImageUrl(editingAnnouncement.imageUrl || editingAnnouncement.image || '');
-        setUploadFileName(editingAnnouncement.imageUrl || editingAnnouncement.image ? 'Imagem existente' : '');
+        setImageUrl(editingAnnouncement.imageUrl || '');
+        setUploadFileName(editingAnnouncement.imageUrl ? 'Imagem existente' : '');
         setAttachments(editingAnnouncement.attachments || []);
         setRelatedLinks(editingAnnouncement.relatedLinks || []);
 
@@ -340,7 +340,7 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
         : `${Math.round(file.size / 1024)} KB`;
 
       newAttachments.push({
-        id: `att_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        id: crypto.randomUUID(),
         name: file.name,
         size: sizeStr,
         url: URL.createObjectURL(file),
@@ -377,7 +377,7 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
     setRelatedLinks((prev) => [
       ...prev,
       {
-        id: `link_${Date.now()}`,
+        id: crypto.randomUUID(),
         title: linkTitleInput.trim(),
         url: linkUrlInput.trim().startsWith('http') ? linkUrlInput.trim() : `https://${linkUrlInput.trim()}`
       }
@@ -447,7 +447,6 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
       priority,
       targetAudience: finalTargetAudience,
       imageUrl: finalImage,
-      image: finalImage,
       actionButtonText: hasCTA && ctaText.trim() ? ctaText.trim() : undefined,
       actionButtonUrl: hasCTA && ctaUrl.trim() ? ctaUrl.trim() : undefined,
       actionButtonSubtext: hasCTA && ctaSubtext.trim() ? ctaSubtext.trim() : undefined,
@@ -483,10 +482,10 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
       }
       showToast('Rascunho salvo com sucesso!', 'info');
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Falha ao salvar rascunho no servidor:', err);
-      const msg = err?.message || 'Falha ao salvar rascunho no servidor.';
-      setSubmitError(msg);
+      const errMsg = err instanceof Error ? err.message : 'Falha ao salvar rascunho no servidor.';
+      setSubmitError(errMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -517,10 +516,10 @@ export const AnnouncementModal: React.FC<AnnouncementModalProps> = ({
       }
 
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Falha ao publicar comunicado no servidor:', err);
-      const msg = err?.message || 'Falha ao salvar o comunicado no banco de dados do servidor.';
-      setSubmitError(msg);
+      const errMsg = err instanceof Error ? err.message : 'Falha ao salvar o comunicado no banco de dados do servidor.';
+      setSubmitError(errMsg);
     } finally {
       setIsSubmitting(false);
     }

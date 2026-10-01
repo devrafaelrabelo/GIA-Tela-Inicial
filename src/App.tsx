@@ -127,7 +127,11 @@ const MainLayout: React.FC = () => {
                       <h2 className="text-base sm:text-lg font-extrabold text-stone-900 dark:text-stone-100">
                         Resultados da Busca no Mural
                       </h2>
-                      <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-[#7c172e]/10 text-[#7c172e] dark:bg-rose-950/60 dark:text-rose-300 border border-[#7c172e]/20">
+                      <span
+                        className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-[#7c172e]/10 text-[#7c172e] dark:bg-rose-950/60 dark:text-rose-300 border border-[#7c172e]/20"
+                        aria-live="polite"
+                        aria-atomic="true"
+                      >
                         {totalResults} {totalResults === 1 ? 'resultado encontrado' : 'resultados encontrados'}
                       </span>
                     </div>

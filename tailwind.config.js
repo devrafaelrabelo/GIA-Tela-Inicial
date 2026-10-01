@@ -20,6 +20,9 @@ export default {
           foreground: '#786e6f'
         },
         brand: {
+          DEFAULT: '#7c172e',
+          dark: '#631023',
+          light: '#bd1e3c',
           50: '#fdf2f4',
           100: '#fbe6ea',
           200: '#f7d0d8',
@@ -33,6 +36,15 @@ export default {
           950: '#400918',
           wine: '#7c172e',
           amber: '#d97706',
+        },
+        surface: {
+          DEFAULT: '#f7f5ee',
+          dark: '#161212',
+        },
+        panel: {
+          dark: '#1f191a',
+          darker: '#171314',
+          mid: '#1e1517',
         }
       }
     },

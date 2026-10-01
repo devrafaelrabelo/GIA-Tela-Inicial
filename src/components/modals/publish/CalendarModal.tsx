@@ -51,11 +51,11 @@ export const CalendarModal: React.FC<CalendarModalProps> = ({ isOpen, onClose })
 
       showToast('Evento adicionado ao calendário!', 'success');
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Falha ao adicionar evento no servidor:', err);
-      const msg = err?.message || 'Falha ao salvar no banco de dados do servidor.';
-      setSubmitError(msg);
-      showToast(msg, 'error');
+      const errMsg = err instanceof Error ? err.message : 'Falha ao salvar no banco de dados do servidor.';
+      setSubmitError(errMsg);
+      showToast(errMsg, 'error');
     } finally {
       setIsSubmitting(false);
     }

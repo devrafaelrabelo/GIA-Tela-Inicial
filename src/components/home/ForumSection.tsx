@@ -47,13 +47,14 @@ export const ForumSection: React.FC<ForumSectionProps> = ({ onOpenDetail }) => {
     }
   };
 
-  const categories = [
-    'Todas',
-    'Dicas de Vendas',
-    'Comemoração',
-    'Dúvidas & Suporte',
-    'Operacional',
-  ];
+  const categories = useMemo(() => {
+    const unique = [...new Set(
+      filteredPosts
+        .map((p) => p.category)
+        .filter((c): c is string => Boolean(c))
+    )].sort();
+    return ['Todas', ...unique];
+  }, [filteredPosts]);
 
   // Busca interna por palavras separadas exclusivamente na Comunidade & Fórum de Trocas
   // Normalização total de acentos, diacríticos e caracteres especiais
@@ -62,7 +63,7 @@ export const ForumSection: React.FC<ForumSectionProps> = ({ onOpenDetail }) => {
 
     if (localSearch.trim()) {
       list = list.filter((p) => {
-        const commentsText = (p.comments || []).map((c) => `${c.author || ''} ${c.text || c.content || ''}`).join(' ');
+        const commentsText = (p.comments || []).map((c) => `${c.author || ''} ${c.content || ''}`).join(' ');
         const searchableText = `${p.title} ${p.content} ${p.category || ''} ${p.tag || ''} ${p.author?.name || ''} ${p.author?.role || ''} ${p.author?.unit || ''} ${commentsText}`;
         return matchesSeparatedWords(searchableText, localSearch);
       });
@@ -333,7 +334,7 @@ export const ForumSection: React.FC<ForumSectionProps> = ({ onOpenDetail }) => {
         </div>
       ) : displayPosts.length > 0 ? (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2" aria-live="polite">
             {paginatedPosts.map((post) => (
               <PostCard key={post.id} post={post} onOpenDetail={onOpenDetail} />
             ))}

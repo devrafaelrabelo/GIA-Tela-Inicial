@@ -54,7 +54,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onOpenDetail }) => {
   };
 
   const displayImage = post.imageUrl || post.image;
-  const isLiked = post.isLiked || post.userLiked;
+  const isLiked = post.userLiked;
   const commentsCount = post.commentsCount ?? post.comments?.length ?? 0;
 
   return (

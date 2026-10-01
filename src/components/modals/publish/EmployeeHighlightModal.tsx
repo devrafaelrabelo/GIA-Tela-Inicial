@@ -195,11 +195,11 @@ export const EmployeeHighlightModal: React.FC<EmployeeHighlightModalProps> = ({
       }
 
       setViewMode('list');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Falha ao salvar colaborador destaque no servidor:', err);
-      const msg = err?.message || 'Falha ao salvar no banco de dados do servidor.';
-      setSubmitError(msg);
-      showToast(msg, 'error');
+      const errMsg = err instanceof Error ? err.message : 'Falha ao salvar no banco de dados do servidor.';
+      setSubmitError(errMsg);
+      showToast(errMsg, 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -339,8 +339,9 @@ export const EmployeeHighlightModal: React.FC<EmployeeHighlightModalProps> = ({
                             try {
                               await deleteEmployeeHighlight(emp.id);
                               showToast('Colaborador removido com sucesso!', 'info');
-                            } catch (err: any) {
-                              showToast(err?.message || 'Falha ao excluir no servidor', 'error');
+                            } catch (err: unknown) {
+                              const errMsg = err instanceof Error ? err.message : 'Falha ao excluir no servidor';
+                              showToast(errMsg, 'error');
                             }
                           }
                         });

@@ -29,7 +29,7 @@ interface PostDetailModalProps {
 
 export const PostDetailModal: React.FC<PostDetailModalProps> = ({ post, onClose }) => {
   const { authStatus, currentUser, openGiaModal, showToast, openConfirmModal } = useAuth();
-  const { forumPosts, togglePostLike, addComment, toggleForumPostActive } = usePortal();
+  const { forumPosts, togglePostLike, addForumComment, toggleForumPostActive } = usePortal();
   const [commentText, setCommentText] = useState('');
   const [activeTab, setActiveTab] = useState<'content' | 'audit'>('content');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -52,7 +52,7 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({ post, onClose 
   const activePost = forumPosts.find((p) => p.id === post.id) || post;
   const isLocked = activePost.visibility === 'members_only' && authStatus === 'unauthenticated';
   const displayImage = activePost.imageUrl || activePost.image;
-  const isLiked = activePost.isLiked || activePost.userLiked;
+  const isLiked = activePost.userLiked;
   const isAuthor = currentUser?.name === activePost.author.name;
   const canManage = isAuthor || isEditor;
   const isDeactivated = activePost.isActive === false;
@@ -79,7 +79,7 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({ post, onClose 
     }
     if (!commentText.trim()) return;
 
-    addComment(activePost.id, {
+    addForumComment(activePost.id, {
       author: currentUser?.name || 'Colaborador',
       authorRole: currentUser?.role || 'Colaborador',
       authorAvatar: currentUser?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=120',
@@ -361,7 +361,7 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({ post, onClose 
                             className="p-3.5 rounded-xl bg-muted/30 border border-border/50 flex items-start gap-3"
                           >
                             <img
-                              src={comment.authorAvatar || comment.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100'}
+                              src={comment.authorAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100'}
                               alt={comment.author}
                               className="w-8 h-8 rounded-full border border-border object-cover"
                             />
@@ -369,11 +369,11 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({ post, onClose 
                               <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-1.5">
                                   <span className="font-semibold text-xs text-foreground">{comment.author}</span>
-                                  <span className="text-[10px] text-muted-foreground">({comment.authorRole || comment.role || 'Colaborador'})</span>
+                                  <span className="text-[10px] text-muted-foreground">({comment.authorRole || 'Colaborador'})</span>
                                 </div>
-                                <span className="text-[10px] text-muted-foreground">{comment.timeAgo || comment.date || 'Hoje'}</span>
+                                <span className="text-[10px] text-muted-foreground">{comment.timeAgo || 'Hoje'}</span>
                               </div>
-                              <p className="text-xs text-foreground/85 mt-1 leading-relaxed">{comment.content || comment.text}</p>
+                              <p className="text-xs text-foreground/85 mt-1 leading-relaxed">{comment.content}</p>
                             </div>
                           </div>
                         ))

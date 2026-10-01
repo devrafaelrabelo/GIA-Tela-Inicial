@@ -70,10 +70,10 @@ export const CompanyGoalModal: React.FC<CompanyGoalModalProps> = ({ isOpen, onCl
       });
 
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Falha ao atualizar metas da empresa no servidor:', err);
-      const msg = err?.message || 'Falha ao salvar metas no servidor.';
-      setSubmitError(msg);
+      const errMsg = err instanceof Error ? err.message : 'Falha ao salvar metas no servidor.';
+      setSubmitError(errMsg);
     } finally {
       setIsSubmitting(false);
     }

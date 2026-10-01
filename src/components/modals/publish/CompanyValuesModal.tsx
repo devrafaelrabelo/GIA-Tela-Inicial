@@ -193,11 +193,11 @@ export const CompanyValuesModal: React.FC<CompanyValuesModalProps> = ({ isOpen, 
           setViewMode('list');
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[CompanyValuesModal] Erro ao salvar valor corporativo:', err);
-      const msg = err?.message || 'Falha ao salvar no banco de dados do servidor.';
-      setSubmitError(msg);
-      showToast(msg, 'error');
+      const errMsg = err instanceof Error ? err.message : 'Falha ao salvar no banco de dados do servidor.';
+      setSubmitError(errMsg);
+      showToast(errMsg, 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -418,8 +418,9 @@ export const CompanyValuesModal: React.FC<CompanyValuesModalProps> = ({ isOpen, 
                                 try {
                                   await deleteCompanyValue(val.id);
                                   showToast('Valor excluído com sucesso.', 'info');
-                                } catch (err: any) {
-                                  showToast(err?.message || 'Falha ao excluir no servidor', 'error');
+                                } catch (err: unknown) {
+                                  const errMsg = err instanceof Error ? err.message : 'Falha ao excluir no servidor';
+                                  showToast(errMsg, 'error');
                                 }
                               }
                             });

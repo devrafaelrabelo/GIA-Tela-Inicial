@@ -37,8 +37,9 @@ export const CalendarEventDetailModal: React.FC<CalendarEventDetailModalProps> =
           await deleteCalendarEvent(event.id);
           showToast('Evento excluído com sucesso.', 'info');
           onClose();
-        } catch (err: any) {
-          showToast(err?.message || 'Falha ao excluir evento no servidor', 'error');
+        } catch (err: unknown) {
+          const errMsg = err instanceof Error ? err.message : 'Falha ao excluir evento no servidor';
+          showToast(errMsg, 'error');
         }
       }
     });

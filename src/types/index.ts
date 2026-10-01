@@ -19,13 +19,9 @@ export interface Comment {
   id: string;
   author: string;
   authorRole?: string;
-  role?: string;
   authorAvatar?: string;
-  avatar?: string;
-  date?: string;
-  timeAgo?: string;
-  text?: string;
-  content?: string;
+  timeAgo: string;
+  content: string;
 }
 
 export interface DynamicCardContent {
@@ -202,7 +198,6 @@ export interface Announcement {
   tags?: string[];
   badge?: string;
   category?: string;
-  image?: string;
   imageUrl?: string;
   isFeatured?: boolean; // Se true, exibe no card Avisos Principais no topo (máximo 5)
   priority?: AnnouncementPriority;
@@ -256,16 +251,12 @@ export interface ForumPost {
   title: string;
   category: string;
   tag?: string;
-  createdAt?: string;
-  timeAgo?: string;
   timestamp?: string;
-  created_timestamp?: string;
   content: string;
   image?: string;
   imageUrl?: string;
   likes: number;
   userLiked?: boolean;
-  isLiked?: boolean;
   commentsCount?: number;
   comments: Comment[];
   pinned?: boolean;

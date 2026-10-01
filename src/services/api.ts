@@ -45,9 +45,9 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     }
 
     return (await response.json()) as T;
-  } catch (error: any) {
+  } catch (error: unknown) {
     clearTimeout(timeoutId);
-    if (error.name === 'AbortError') {
+    if (error instanceof Error && error.name === 'AbortError') {
       throw new Error('Tempo limite de conexão esgotado (timeout). O servidor demorou para responder.');
     }
     console.error(`[API] Falha de comunicação em ${endpoint}:`, error);
@@ -140,8 +140,8 @@ export const api = {
     });
   },
 
-  togglePostLike: async (id: string): Promise<{ userLiked: boolean; isLiked: boolean; likes: number }> => {
-    return request<{ userLiked: boolean; isLiked: boolean; likes: number }>(`/posts/${id}/like`, {
+  togglePostLike: async (id: string): Promise<{ userLiked: boolean; isLiked?: boolean; likes: number }> => {
+    return request<{ userLiked: boolean; isLiked?: boolean; likes: number }>(`/posts/${id}/like`, {
       method: 'POST'
     });
   },

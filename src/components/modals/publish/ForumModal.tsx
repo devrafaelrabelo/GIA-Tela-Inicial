@@ -141,10 +141,10 @@ export const ForumModal: React.FC<ForumModalProps> = ({ isOpen, onClose }) => {
 
       showToast('Tópico publicado no fórum com sucesso!', 'success');
       handleClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Falha ao criar postagem no servidor:', err);
-      const msg = err?.message || 'Falha na comunicação com o banco de dados do servidor.';
-      setSubmitError(msg);
+      const errMsg = err instanceof Error ? err.message : 'Falha na comunicação com o banco de dados do servidor.';
+      setSubmitError(errMsg);
       // Mantém o formulário aberto para o usuário não perder os dados digitados
     } finally {
       setIsSubmitting(false);

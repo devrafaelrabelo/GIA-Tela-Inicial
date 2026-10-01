@@ -55,7 +55,7 @@ export const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = (
   onClose
 }) => {
   const { authStatus, currentUser, openGiaModal, showToast, openConfirmModal } = useAuth();
-  const { announcements, toggleLike, addComment, toggleAnnouncementActive, toggleAnnouncementFeatured, toggleAnnouncementVisibility } = usePortal();
+  const { announcements, toggleLike, addAnnouncementComment, toggleAnnouncementActive, toggleAnnouncementFeatured, toggleAnnouncementVisibility } = usePortal();
   const isLogged = authStatus !== 'unauthenticated' && !!currentUser;
   const isEditor = authStatus === 'editor' && !!currentUser?.isEditor;
   const [commentText, setCommentText] = useState('');
@@ -81,7 +81,7 @@ export const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = (
   const item = announcements.find((a) => a.id === announcement.id) || announcement;
   const IconComponent = iconMap[item.icon || 'megaphone'] || Megaphone;
   const comments = item.comments || [];
-  const imageUrl = item.imageUrl || item.image;
+  const imageUrl = item.imageUrl;
 
   // Estimativa aproximada de tempo de leitura
   const wordCount = (item.content ? item.content.split(/\s+/).length : 0) + (item.summary ? item.summary.split(/\s+/).length : 0);
@@ -145,7 +145,7 @@ export const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = (
     }
     if (!commentText.trim()) return;
 
-    addComment('announcements', item.id, commentText.trim());
+    addAnnouncementComment(item.id, commentText.trim());
     setCommentText('');
     showToast('Comentário publicado com sucesso!', 'success');
   };
@@ -595,9 +595,9 @@ export const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = (
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
-                        {c.avatar ? (
+                        {c.authorAvatar ? (
                           <img
-                            src={c.avatar}
+                            src={c.authorAvatar}
                             alt={c.author}
                             className="w-7 h-7 rounded-full object-cover border border-stone-200 dark:border-stone-700"
                           />
@@ -609,18 +609,18 @@ export const AnnouncementDetailModal: React.FC<AnnouncementDetailModalProps> = (
                         <span className="text-xs font-bold text-stone-900 dark:text-stone-100">
                           {c.author}
                         </span>
-                        {c.role && (
+                        {c.authorRole && (
                           <span className="text-[10px] px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400 font-medium">
-                            {c.role}
+                            {c.authorRole}
                           </span>
                         )}
                       </div>
                       <span className="text-[10px] text-stone-400">
-                        {c.date || c.timeAgo || 'Hoje'}
+                        {c.timeAgo || 'Hoje'}
                       </span>
                     </div>
                     <p className="text-xs sm:text-[13px] text-stone-600 dark:text-stone-300 pl-9 leading-relaxed">
-                      {c.text || c.content}
+                      {c.content}
                     </p>
                   </div>
                 ))}
