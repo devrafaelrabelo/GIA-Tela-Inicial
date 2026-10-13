@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Trophy, ChevronUp, ChevronDown, Calendar, Utensils, Bike, AlertCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { usePortal } from '../../context/PortalContext';
+import { PORTAL_MONTH_OPTIONS, CURRENT_PORTAL_MONTH, isCurrentPortalMonth, formatPortalMonthDropdownItem } from '../../utils/date';
 
 type ModalityTab = 'delivery' | 'self-service';
 
@@ -223,25 +224,13 @@ const getMedalBadgeInfo = (position: number) => {
   }
 };
 
-const MONTH_OPTIONS = [
-  'Setembro/2026',
-  'Agosto/2026',
-  'Julho/2026',
-  'Junho/2026',
-  'Maio/2026',
-  'Abril/2026',
-  'Março/2026',
-  'Fevereiro/2026',
-  'Janeiro/2026'
-];
-
 export const TopUnitsRanking: React.FC = () => {
   const { authStatus, currentUser } = useAuth();
   const { topUnits, isLoadingTopUnits, errorTopUnits, retrySyncAll } = usePortal();
   const isEditor = authStatus === 'editor' && !!currentUser?.isEditor;
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState<ModalityTab>('delivery');
-  const [selectedMonth, setSelectedMonth] = useState('Setembro/2026');
+  const [selectedMonth, setSelectedMonth] = useState(CURRENT_PORTAL_MONTH);
   const [isMonthDropdownOpen, setIsMonthDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -273,7 +262,7 @@ export const TopUnitsRanking: React.FC = () => {
     const all = topUnits?.delivery ?? [];
     const clean = selectedMonth.toLowerCase().split('/')[0];
     const filtered = all.filter((u) => u.month && u.month.toLowerCase().includes(clean));
-    const list = filtered.length > 0 ? filtered : all.filter(u => !u.month || u.month.includes('Setembro'));
+    const list = filtered.length > 0 ? filtered : all.filter(u => !u.month || isCurrentPortalMonth(u.month));
     return list.sort((a, b) => a.position - b.position).slice(0, 5);
   }, [topUnits, selectedMonth]);
 
@@ -293,7 +282,7 @@ export const TopUnitsRanking: React.FC = () => {
     const all = topUnits?.selfService ?? [];
     const clean = selectedMonth.toLowerCase().split('/')[0];
     const filtered = all.filter((u) => u.month && u.month.toLowerCase().includes(clean));
-    const list = filtered.length > 0 ? filtered : all.filter(u => !u.month || u.month.includes('Setembro'));
+    const list = filtered.length > 0 ? filtered : all.filter(u => !u.month || isCurrentPortalMonth(u.month));
     return list.sort((a, b) => a.position - b.position).slice(0, 5);
   }, [topUnits, selectedMonth]);
 
@@ -368,13 +357,13 @@ export const TopUnitsRanking: React.FC = () => {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800/80 text-xs font-semibold text-stone-700 dark:text-stone-300 shadow-2xs hover:bg-stone-50 dark:hover:bg-stone-700/60 transition-colors cursor-pointer touch-manipulation focus-visible:ring-2 focus-visible:ring-[#7c172e]"
             >
               <Calendar size={13} className="text-stone-400" />
-              <span>{selectedMonth.includes('Setembro') ? 'Este mês' : selectedMonth}</span>
+              <span>{isCurrentPortalMonth(selectedMonth) ? 'Este mês' : selectedMonth}</span>
               <ChevronDown size={13} className={`text-stone-400 ml-0.5 transition-transform ${isMonthDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {isMonthDropdownOpen && (
               <div className="absolute right-0 top-full mt-1.5 w-48 bg-white dark:bg-[#251e20] border border-stone-200 dark:border-stone-700 rounded-xl shadow-lg z-30 py-1 max-h-56 overflow-y-auto">
-                {MONTH_OPTIONS.map((m) => (
+                {PORTAL_MONTH_OPTIONS.map((m) => (
                   <button
                     key={m}
                     type="button"
@@ -388,7 +377,7 @@ export const TopUnitsRanking: React.FC = () => {
                         : 'text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700/50'
                     }`}
                   >
-                    <span>{m === 'Setembro/2026' ? 'Setembro (Este mês)' : m}</span>
+                    <span>{formatPortalMonthDropdownItem(m)}</span>
                     {selectedMonth === m && <span className="text-[10px] text-[#7c172e] dark:text-rose-400">✓</span>}
                   </button>
                 ))}

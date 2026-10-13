@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { PortalProvider, usePortal } from './context/PortalContext';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
@@ -18,15 +18,17 @@ import { QuickAccessGrid } from './components/home/QuickAccessGrid';
 import { ForumSection } from './components/home/ForumSection';
 import { PostCard } from './components/home/PostCard';
 import { AnnouncementCard } from './components/home/AnnouncementCard';
-import { GiaLoginModal } from './components/modals/GiaLoginModal';
-import { PublishModal } from './components/modals/PublishModal';
-import { PostDetailModal } from './components/modals/PostDetailModal';
-import { AnnouncementDetailModal } from './components/modals/AnnouncementDetailModal';
-import { PermissionDeniedModal } from './components/modals/PermissionDeniedModal';
-import { ConfirmDeleteModal } from './components/modals/ConfirmDeleteModal';
 import { Toast } from './components/modals/Toast';
 import { ShieldCheck, ArrowRight, Search, X, MessageSquare, Megaphone } from 'lucide-react';
 import { Announcement, ForumPost } from './types';
+
+// Modais carregados sob demanda (code-splitting) para reduzir o bundle inicial
+const GiaLoginModal = lazy(() => import('./components/modals/GiaLoginModal').then((m) => ({ default: m.GiaLoginModal })));
+const PublishModal = lazy(() => import('./components/modals/PublishModal').then((m) => ({ default: m.PublishModal })));
+const PostDetailModal = lazy(() => import('./components/modals/PostDetailModal').then((m) => ({ default: m.PostDetailModal })));
+const AnnouncementDetailModal = lazy(() => import('./components/modals/AnnouncementDetailModal').then((m) => ({ default: m.AnnouncementDetailModal })));
+const PermissionDeniedModal = lazy(() => import('./components/modals/PermissionDeniedModal').then((m) => ({ default: m.PermissionDeniedModal })));
+const ConfirmDeleteModal = lazy(() => import('./components/modals/ConfirmDeleteModal').then((m) => ({ default: m.ConfirmDeleteModal })));
 
 const MainLayout: React.FC = () => {
   const { authStatus, currentUser, openGiaModal } = useAuth();
@@ -40,7 +42,7 @@ const MainLayout: React.FC = () => {
   const [selectedPost, setSelectedPost] = useState<ForumPost | null>(null);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
 
-  // Sincronização em tempo real do item ativo com a posição do scroll no site (Scroll Spy)
+  // Sincronização do item ativo com a seção visível (Scroll Spy via IntersectionObserver)
   useEffect(() => {
     const sectionTargets = [
       { id: 'inicio', target: 'hero-section' },
@@ -54,25 +56,29 @@ const MainLayout: React.FC = () => {
       { id: 'forum', target: 'forum' },
     ];
 
-    const handleScroll = () => {
-      const scrollPosition = window.scrollY + 200;
-      for (let i = sectionTargets.length - 1; i >= 0; i--) {
-        const item = sectionTargets[i];
-        const el = document.getElementById(item.target);
-        if (el) {
-          const top = el.offsetTop;
-          if (scrollPosition >= top) {
-            setActiveNav(item.id);
-            break;
-          }
-        }
-      }
-    };
+    const visible = new Set<string>();
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [isLogged]);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) visible.add(entry.target.id);
+          else visible.delete(entry.target.id);
+        });
+        // Entre as seções visíveis, vale a primeira na ordem da página
+        const active = sectionTargets.find((s) => visible.has(s.target));
+        if (active) setActiveNav(active.id);
+      },
+      // Faixa de detecção: do topo (abaixo do header) até ~40% da tela
+      { rootMargin: '-80px 0px -60% 0px', threshold: 0 }
+    );
+
+    sectionTargets.forEach(({ target }) => {
+      const el = document.getElementById(target);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [isLogged, isSearching]);
 
   const handleToggleSidebar = () => {
     if (window.innerWidth < 768) {
@@ -345,18 +351,20 @@ const MainLayout: React.FC = () => {
       </div>
 
       {/* Global Modals */}
-      <PublishModal />
-      <PostDetailModal post={selectedPost} onClose={() => setSelectedPost(null)} />
-      {selectedAnnouncement && (
-        <AnnouncementDetailModal
-          announcement={selectedAnnouncement}
-          isOpen={!!selectedAnnouncement}
-          onClose={() => setSelectedAnnouncement(null)}
-        />
-      )}
-      <PermissionDeniedModal />
-      <ConfirmDeleteModal />
-      <GiaLoginModal />
+      <Suspense fallback={null}>
+        <PublishModal />
+        <PostDetailModal post={selectedPost} onClose={() => setSelectedPost(null)} />
+        {selectedAnnouncement && (
+          <AnnouncementDetailModal
+            announcement={selectedAnnouncement}
+            isOpen={!!selectedAnnouncement}
+            onClose={() => setSelectedAnnouncement(null)}
+          />
+        )}
+        <PermissionDeniedModal />
+        <ConfirmDeleteModal />
+        <GiaLoginModal />
+      </Suspense>
       <Toast />
     </div>
   );

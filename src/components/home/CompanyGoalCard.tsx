@@ -2,18 +2,9 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Target, ArrowUp, Flag, Building2, Users, Calendar, ChevronDown, Award, Settings2, AlertCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { usePortal } from '../../context/PortalContext';
+import { PORTAL_MONTH_OPTIONS, CURRENT_PORTAL_MONTH, isCurrentPortalMonth, formatPortalMonthDropdownItem } from '../../utils/date';
 
-const MONTH_OPTIONS = [
-  'Setembro/2026',
-  'Agosto/2026',
-  'Julho/2026',
-  'Junho/2026',
-  'Maio/2026',
-  'Abril/2026',
-  'Março/2026',
-  'Fevereiro/2026',
-  'Janeiro/2026'
-];
+const MONTH_OPTIONS = PORTAL_MONTH_OPTIONS;
 
 const cleanGoalText = (str?: string | null): string => {
   if (!str) return '';
@@ -29,7 +20,7 @@ export const CompanyGoalCard: React.FC = () => {
   const { authStatus, currentUser, openPublishModal } = useAuth();
   const { companyGoal, isLoadingGoal, errorGoal, retryLoadCompanyGoal } = usePortal();
   const isEditor = authStatus === 'editor' && !!currentUser?.isEditor;
-  const [selectedMonth, setSelectedMonth] = useState('Setembro/2026');
+  const [selectedMonth, setSelectedMonth] = useState(CURRENT_PORTAL_MONTH);
   const [isMonthDropdownOpen, setIsMonthDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [isRetrying, setIsRetrying] = useState(false);
@@ -48,7 +39,7 @@ export const CompanyGoalCard: React.FC = () => {
 
   const currentGoalData = useMemo(() => {
     if (!companyGoal) return null;
-    if (selectedMonth.includes('Setembro')) return companyGoal;
+    if (isCurrentPortalMonth(selectedMonth)) return companyGoal;
     const clean = selectedMonth.toLowerCase().split('/')[0];
     const match = companyGoal.history?.find((h) => h.month && h.month.toLowerCase().includes(clean));
     return match || companyGoal;
@@ -174,7 +165,7 @@ export const CompanyGoalCard: React.FC = () => {
   const unitsOnTargetSubtext = cleanGoalText(currentGoalData?.unitsOnTargetSubtext) || 'Unidades auditadas';
   const engagementPercent = currentGoalData?.engagementPercent || '100%';
   const engagementSubtext = cleanGoalText(currentGoalData?.engagementSubtext) || 'Juntos vamos mais longe!';
-  const monthText = selectedMonth.includes('Setembro') ? 'Este mês' : selectedMonth;
+  const monthText = isCurrentPortalMonth(selectedMonth) ? 'Este mês' : selectedMonth;
 
   return (
     <section
@@ -252,7 +243,7 @@ export const CompanyGoalCard: React.FC = () => {
                           : 'text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700/50'
                       }`}
                     >
-                      <span>{m === 'Setembro/2026' ? 'Setembro (Este mês)' : m}</span>
+                      <span>{formatPortalMonthDropdownItem(m)}</span>
                       {selectedMonth === m && <span className="text-[10px] text-[#7c172e] dark:text-rose-400">✓</span>}
                     </button>
                   ))}

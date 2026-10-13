@@ -9,7 +9,8 @@ export const MONTHS_2026 = [
   { name: 'Junho', key: '2026-06', label: 'Junho/2026' },
   { name: 'Julho', key: '2026-07', label: 'Julho/2026' },
   { name: 'Agosto', key: '2026-08', label: 'Agosto/2026' },
-  { name: 'Setembro', key: '2026-09', label: 'Setembro/2026' }
+  { name: 'Setembro', key: '2026-09', label: 'Setembro/2026' },
+  { name: 'Outubro', key: '2026-10', label: 'Outubro/2026' }
 ];
 
 // ========================================================
@@ -1349,20 +1350,34 @@ export const historicalCalendarEvents = [
 ];
 
 // ========================================================
-// 4. META GERAL DA EMPRESA (Janeiro a Setembro)
+// 4. META GERAL DA EMPRESA (Janeiro a Outubro)
 // ========================================================
 export const historicalCompanyGoals = [
   {
     id: "current_goal",
     month: "Este mês",
-    target_percent: 93,
+    target_percent: 94,
     status_text: "Ritmo Forte 🚀",
-    meta_month: "93%",
-    meta_month_subtext: "Falta 7% para o topo",
-    growth_percent: "+12%",
+    meta_month: "94%",
+    meta_month_subtext: "Falta 6% para o topo",
+    growth_percent: "+13%",
     growth_subtext: "vs. mês anterior",
-    units_on_target: "11 de 15",
-    units_on_target_subtext: "73% da rede aprovada",
+    units_on_target: "12 de 15",
+    units_on_target_subtext: "80% da rede aprovada",
+    engagement_percent: "100%",
+    engagement_subtext: "Juntos vamos mais longe!"
+  },
+  {
+    id: "goal_2026_10",
+    month: "Outubro/2026",
+    target_percent: 94,
+    status_text: "Ritmo Forte 🚀",
+    meta_month: "94%",
+    meta_month_subtext: "Falta 6% para o topo",
+    growth_percent: "+13%",
+    growth_subtext: "vs. mês anterior",
+    units_on_target: "12 de 15",
+    units_on_target_subtext: "80% da rede aprovada",
     engagement_percent: "100%",
     engagement_subtext: "Juntos vamos mais longe!"
   },
@@ -1495,12 +1510,29 @@ export const historicalCompanyGoals = [
 ];
 
 // ========================================================
-// 5. TOP UNIDADES DO MÊS (Janeiro a Setembro)
+// 5. TOP UNIDADES DO MÊS (Janeiro a Outubro)
 // ========================================================
 export function generateTopUnitsForMonths() {
   const unitsData = [];
 
   const monthConfigs = [
+    {
+      month: 'Outubro/2026',
+      del: [
+        { name: 'Unidade Campinas', percent: '116%', tagline: 'Liderança no início do Q4!', icon: '⭐', medal_bg: 'bg-[#f59e0b]', image_url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=500&auto=format&fit=crop&q=80' },
+        { name: 'Unidade Centro', percent: '111%', tagline: 'Alta conversão e agilidade!', icon: '🏆', medal_bg: 'bg-[#94a3b8]', image_url: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&auto=format&fit=crop&q=80' },
+        { name: 'Unidade Norte', percent: '107%', tagline: 'Crescimento consistente!', icon: '📊', medal_bg: 'bg-[#b45309]', image_url: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=500&auto=format&fit=crop&q=80' },
+        { name: 'Unidade Sul', percent: '103%', tagline: 'Meta batida com antecedência!', icon: '🍃', medal_bg: 'bg-[#78716c]', image_url: 'https://images.unsplash.com/photo-1528698827591-e19ccd7bc23d?w=500&auto=format&fit=crop&q=80' },
+        { name: 'Unidade Alphaville', percent: '100%', tagline: 'Meta garantida!', icon: '🚀', medal_bg: 'bg-[#78716c]', image_url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=500&auto=format&fit=crop&q=80' }
+      ],
+      self: [
+        { name: 'Unidade Paulista', percent: '117%', tagline: 'Salão em ritmo de recorde!', icon: '⭐', medal_bg: 'bg-[#f59e0b]', image_url: 'https://images.unsplash.com/photo-1544148103-0773bf10d330?w=500&auto=format&fit=crop&q=80' },
+        { name: 'Unidade Shopping Sul', percent: '112%', tagline: 'Giro rápido e satisfação!', icon: '🏆', medal_bg: 'bg-[#94a3b8]', image_url: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=500&auto=format&fit=crop&q=80' },
+        { name: 'Unidade Jardins', percent: '108%', tagline: 'Atendimento impecável!', icon: '📊', medal_bg: 'bg-[#b45309]', image_url: 'https://images.unsplash.com/photo-1552566626-52f8b828add9?w=500&auto=format&fit=crop&q=80' },
+        { name: 'Unidade Vila Olímpia', percent: '104%', tagline: 'Superação no horário executivo!', icon: '🍃', medal_bg: 'bg-[#78716c]', image_url: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&auto=format&fit=crop&q=80' },
+        { name: 'Unidade Alphaville', percent: '101%', tagline: 'Padrão corporativo exemplar!', icon: '🚀', medal_bg: 'bg-[#78716c]', image_url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=500&auto=format&fit=crop&q=80' }
+      ]
+    },
     {
       month: 'Setembro/2026',
       del: [
@@ -1692,9 +1724,21 @@ export function generateTopUnitsForMonths() {
 }
 
 // ========================================================
-// 6. FILIAIS EM EVIDÊNCIA (Card 2 - Janeiro a Setembro)
+// 6. FILIAIS EM EVIDÊNCIA (Card 2 - Janeiro a Outubro)
 // ========================================================
 export const historicalCompanyHighlights = [
+  {
+    id: "destaque_empresa_out",
+    title: "Filial Vila Olímpia — Liderança Q4",
+    content: "Iniciou o 4º trimestre superando em 128% a meta comercial na primeira semana de outubro, com recorde de pedidos corporativos no horário executivo.",
+    image_url: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&auto=format&fit=crop&q=80",
+    author_name: "Diretoria de Operações",
+    badge: "Filial em Evidência",
+    metric: "128% da meta",
+    date: "Outubro/2026",
+    likes_count: 61,
+    user_liked: false
+  },
   {
     id: "destaque_empresa_set",
     title: "Filial Campinas — Maior Eficiência",
@@ -1806,9 +1850,21 @@ export const historicalCompanyHighlights = [
 ];
 
 // ========================================================
-// 7. COLABORADORAS E COLABORADORES DO MÊS (Card 3 - Janeiro a Setembro)
+// 7. COLABORADORAS E COLABORADORES DO MÊS (Card 3 - Janeiro a Outubro)
 // ========================================================
 export const historicalEmployeeHighlights = [
+  {
+    id: "destaque_func_out",
+    name: "Rafael Mendonça",
+    role: "Coordenador de Atendimento & Salão",
+    badge: "Colaborador do Mês",
+    award: "Excelência no Atendimento",
+    content: "Liderou a implantação do novo protocolo de recepção ágil na Unidade Paulista, elevando o índice de satisfação dos clientes a 99,4% em outubro.",
+    image_url: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=500&auto=format&fit=crop&q=80",
+    date: "Outubro/2026",
+    likes_count: 69,
+    user_liked: false
+  },
   {
     id: "destaque_func_set",
     name: "Joana Prado",

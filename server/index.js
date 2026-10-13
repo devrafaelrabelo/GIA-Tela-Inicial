@@ -769,6 +769,7 @@ app.get('/api/company-highlights', async (req, res) => {
     }
     query += ` ORDER BY 
       CASE 
+        WHEN date ILIKE '%Outubro%' THEN 0
         WHEN date ILIKE '%Setembro%' THEN 1
         WHEN date ILIKE '%Agosto%' THEN 2
         WHEN date ILIKE '%Julho%' THEN 3
@@ -863,6 +864,7 @@ app.get('/api/employee-highlights', async (req, res) => {
     }
     query += ` ORDER BY 
       CASE 
+        WHEN date ILIKE '%Outubro%' THEN 0
         WHEN date ILIKE '%Setembro%' THEN 1
         WHEN date ILIKE '%Agosto%' THEN 2
         WHEN date ILIKE '%Julho%' THEN 3
@@ -950,7 +952,8 @@ app.get('/api/company-goals', async (req, res) => {
     const allGoalsRes = await db.query(`
       SELECT * FROM company_goals ORDER BY 
         CASE 
-          WHEN id = 'current_goal' OR month ILIKE '%Setembro%' OR month ILIKE '%Este m%' THEN 1
+          WHEN id = 'current_goal' OR month ILIKE '%Outubro%' OR month ILIKE '%Este m%' THEN 0
+          WHEN month ILIKE '%Setembro%' THEN 1
           WHEN month ILIKE '%Agosto%' THEN 2
           WHEN month ILIKE '%Julho%' THEN 3
           WHEN month ILIKE '%Junho%' THEN 4

@@ -2,27 +2,16 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Calendar, Plus, Heart, Trophy, ChevronLeft, ChevronRight, ChevronDown, User, AlertCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { usePortal } from '../../context/PortalContext';
-import { isReducedMotionPreferred } from '../../utils/date';
+import { isReducedMotionPreferred, PORTAL_MONTH_OPTIONS, CURRENT_PORTAL_MONTH, isCurrentPortalMonth, formatPortalMonthDropdownItem } from '../../utils/date';
 
-const MONTH_OPTIONS = [
-  'Setembro/2026',
-  'Agosto/2026',
-  'Julho/2026',
-  'Junho/2026',
-  'Maio/2026',
-  'Abril/2026',
-  'Março/2026',
-  'Fevereiro/2026',
-  'Janeiro/2026',
-  'Todos os meses'
-];
+const MONTH_OPTIONS = [...PORTAL_MONTH_OPTIONS, 'Todos os meses'];
 
 export const GrowthHighlight: React.FC = () => {
   const { authStatus, currentUser, openPublishModal } = useAuth();
   const { employeeHighlights, toggleEmployeeHighlightLike, isLoadingHighlights, errorHighlights, retrySyncAll } = usePortal();
   const [currentIdx, setCurrentIdx] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState('Setembro/2026');
+  const [selectedMonth, setSelectedMonth] = useState(CURRENT_PORTAL_MONTH);
   const [isMonthDropdownOpen, setIsMonthDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -191,7 +180,7 @@ export const GrowthHighlight: React.FC = () => {
                 className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 text-xs font-semibold text-stone-700 dark:text-stone-300 shadow-2xs hover:bg-stone-50 dark:hover:bg-stone-700/60 transition-colors cursor-pointer touch-manipulation focus-visible:ring-2 focus-visible:ring-[#7c172e] focus-visible:outline-hidden"
               >
                 <Calendar size={12} className="text-stone-400" />
-                <span className="max-w-[90px] sm:max-w-none truncate">{selectedMonth.includes('Setembro') ? 'Este mês' : selectedMonth}</span>
+                <span className="max-w-[90px] sm:max-w-none truncate">{isCurrentPortalMonth(selectedMonth) ? 'Este mês' : selectedMonth}</span>
                 <ChevronDown size={12} className={`text-stone-400 transition-transform ${isMonthDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
@@ -212,7 +201,7 @@ export const GrowthHighlight: React.FC = () => {
                           : 'text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700/50'
                       }`}
                     >
-                      <span>{m === 'Setembro/2026' ? 'Setembro (Este mês)' : m}</span>
+                      <span>{formatPortalMonthDropdownItem(m)}</span>
                       {selectedMonth === m && <span className="text-[10px] text-[#7c172e] dark:text-rose-400">✓</span>}
                     </button>
                   ))}
@@ -293,7 +282,7 @@ export const GrowthHighlight: React.FC = () => {
 
               <div className="flex items-center gap-1 text-[11px] font-medium">
                 <Calendar size={13} className="text-stone-400" />
-                <span>{activeSlide.date || 'Setembro/2026'}</span>
+                <span>{activeSlide.date || CURRENT_PORTAL_MONTH}</span>
               </div>
 
               <span className="text-stone-300 dark:text-stone-700">|</span>

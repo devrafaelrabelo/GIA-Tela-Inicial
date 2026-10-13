@@ -52,6 +52,52 @@ const MONTH_MAP: Record<string, number> = {
   dez: 11, dezembro: 11
 };
 
+const PORTAL_MONTH_NAMES = [
+  'Janeiro',
+  'Fevereiro',
+  'Março',
+  'Abril',
+  'Maio',
+  'Junho',
+  'Julho',
+  'Agosto',
+  'Setembro',
+  'Outubro',
+  'Novembro',
+  'Dezembro'
+];
+
+/**
+ * Retorna a lista de meses disponíveis (de Janeiro até o mês atual do sistema, em ordem decrescente).
+ */
+export function getPortalMonthOptions(now: Date = new Date()): string[] {
+  const year = 2026;
+  const maxMonthIdx = now.getFullYear() > year ? 11 : Math.max(9, Math.min(11, now.getMonth()));
+  const options: string[] = [];
+  for (let i = maxMonthIdx; i >= 0; i--) {
+    options.push(`${PORTAL_MONTH_NAMES[i]}/${year}`);
+  }
+  return options;
+}
+
+export const PORTAL_MONTH_OPTIONS = getPortalMonthOptions();
+
+export const CURRENT_PORTAL_MONTH = PORTAL_MONTH_OPTIONS[0] || 'Outubro/2026';
+
+export function isCurrentPortalMonth(monthLabel: string): boolean {
+  if (!monthLabel) return false;
+  const currentMonthName = CURRENT_PORTAL_MONTH.split('/')[0].toLowerCase();
+  return monthLabel.toLowerCase().includes(currentMonthName);
+}
+
+export function formatPortalMonthDropdownItem(monthLabel: string): string {
+  if (monthLabel === CURRENT_PORTAL_MONTH) {
+    const monthName = monthLabel.split('/')[0];
+    return `${monthName} (Este mês)`;
+  }
+  return monthLabel;
+}
+
 /**
  * Converte qualquer representação textual de data de evento para um objeto Date seguro.
  * Suporta formatos: "DD/MM", "DD/MM/YYYY", "YYYY-MM-DD", "25 de setembro", etc.

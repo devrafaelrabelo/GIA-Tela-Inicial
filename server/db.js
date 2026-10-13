@@ -361,7 +361,7 @@ export async function initDatabase() {
   // Realiza Seed inicial caso o banco esteja vazio
   await seedIfEmpty();
 
-  // Popula e assegura integridade de dados históricos de Janeiro a Setembro de 2026
+  // Popula e assegura integridade de dados históricos de 2026 (Janeiro até o mês atual)
   await seedHistoricalMonthsData();
 }
 
@@ -1124,7 +1124,7 @@ async function seedIfEmpty() {
 }
 
 export async function seedHistoricalMonthsData() {
-  console.log('🌱 Sincronizando dados históricos de Janeiro a Setembro de 2026...');
+  console.log('🌱 Sincronizando dados históricos de 2026 (Janeiro até o mês atual)...');
 
   // 1. Comunicados (Janeiro a Setembro)
   for (const ann of historicalAnnouncements) {
@@ -1331,5 +1331,5 @@ export async function seedHistoricalMonthsData() {
     `, [eh.id, eh.name, eh.role, eh.badge, eh.content, eh.image_url, eh.award, eh.date, eh.likes_count, eh.user_liked]);
   }
 
-  console.log('✅ Dados históricos de Janeiro a Setembro sincronizados com sucesso!');
+  console.log('✅ Dados históricos de 2026 sincronizados com sucesso!');
 }
