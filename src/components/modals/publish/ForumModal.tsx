@@ -9,7 +9,9 @@ import {
   Globe,
   Lock,
   Send,
-  AlertCircle
+  AlertCircle,
+  Video,
+  Image as ImageIcon
 } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { usePortal } from '../../../context/PortalContext';
@@ -17,6 +19,8 @@ import { Visibility } from '../../../types';
 import { compressImageFile } from '../../../utils/imageCompressor';
 import { useModalDismiss } from '../../../hooks/useModalDismiss';
 import { RichTextEditor } from '../../common/RichTextEditor';
+import { VideoPlayer } from '../../common/VideoPlayer';
+import { readVideoFile } from '../../../utils/video';
 
 interface ForumModalProps {
   isOpen: boolean;
@@ -41,14 +45,27 @@ export const ForumModal: React.FC<ForumModalProps> = ({ isOpen, onClose }) => {
   const [category, setCategory] = useState('Dicas de Vendas');
   const [content, setContent] = useState('');
   const [visibility, setVisibility] = useState<Visibility>('members_only');
+
+  // Mídia: Imagem ou Vídeo
+  const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
+
+  // Imagem
   const [imageUrl, setImageUrl] = useState('');
   const [imageInputMode, setImageInputMode] = useState<'upload' | 'url'>('upload');
   const [uploadFileName, setUploadFileName] = useState('');
   const [uploadFileSize, setUploadFileSize] = useState('');
+
+  // Vídeo
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoInputMode, setVideoInputMode] = useState<'upload' | 'url'>('upload');
+  const [videoFileName, setVideoFileName] = useState('');
+  const [videoFileSize, setVideoFileSize] = useState('');
+
   const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
 
@@ -74,6 +91,44 @@ export const ForumModal: React.FC<ForumModalProps> = ({ isOpen, onClose }) => {
     }
   };
 
+  const processVideoFile = async (file: File) => {
+    const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|ogg|mov)$/i.test(file.name);
+    if (!isVideo) {
+      showToast('Selecione um formato de vídeo válido (.mp4, .webm, .ogg ou .mov).', 'error');
+      return;
+    }
+
+    if (file.size > 15 * 1024 * 1024) {
+      showToast('O vídeo excede o limite de 15MB. Para vídeos maiores, envie para o YouTube/Vimeo e cole o link!', 'error');
+      return;
+    }
+
+    try {
+      const dataUrl = await readVideoFile(file);
+      setVideoUrl(dataUrl);
+      setVideoFileName(file.name);
+      const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+      setVideoFileSize(`${sizeMb} MB`);
+      showToast('Vídeo carregado com sucesso!', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Falha ao processar arquivo de vídeo.', 'error');
+    }
+  };
+
+  const handleVideoFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      processVideoFile(e.target.files[0]);
+    }
+  };
+
+  const handleRemoveVideo = () => {
+    setVideoUrl('');
+    setVideoFileName('');
+    setVideoFileSize('');
+    if (videoInputRef.current) videoInputRef.current.value = '';
+  };
+
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -91,7 +146,11 @@ export const ForumModal: React.FC<ForumModalProps> = ({ isOpen, onClose }) => {
     e.stopPropagation();
     setIsDragging(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      processImageFile(e.dataTransfer.files[0]);
+      if (mediaType === 'video') {
+        processVideoFile(e.dataTransfer.files[0]);
+      } else {
+        processImageFile(e.dataTransfer.files[0]);
+      }
     }
   };
 
@@ -119,6 +178,22 @@ export const ForumModal: React.FC<ForumModalProps> = ({ isOpen, onClose }) => {
 
     if (!currentUser) return;
 
+    // Se estiver em modo vídeo com link, valida
+    let finalVideoUrl: string | undefined = undefined;
+    let finalVideoType: 'upload' | 'embed' | undefined = undefined;
+    let finalImageUrl: string | undefined = undefined;
+
+    if (mediaType === 'video') {
+      if (videoUrl.trim()) {
+        finalVideoUrl = videoUrl.trim();
+        finalVideoType = videoInputMode === 'upload' ? 'upload' : 'embed';
+      }
+    } else {
+      if (imageUrl.trim()) {
+        finalImageUrl = imageUrl.trim();
+      }
+    }
+
     setIsSubmitting(true);
     try {
       await addForumPost({
@@ -135,7 +210,9 @@ export const ForumModal: React.FC<ForumModalProps> = ({ isOpen, onClose }) => {
         category,
         tag: category,
         visibility,
-        imageUrl: imageUrl.trim() || undefined,
+        imageUrl: finalImageUrl,
+        videoUrl: finalVideoUrl,
+        videoType: finalVideoType,
         pinned: false
       });
 
@@ -157,6 +234,9 @@ export const ForumModal: React.FC<ForumModalProps> = ({ isOpen, onClose }) => {
     setImageUrl('');
     setUploadFileName('');
     setUploadFileSize('');
+    setVideoUrl('');
+    setVideoFileName('');
+    setVideoFileSize('');
     setSubmitError(null);
     onClose();
   };
@@ -296,116 +376,275 @@ export const ForumModal: React.FC<ForumModalProps> = ({ isOpen, onClose }) => {
             onChange={(val) => setContent(val)}
           />
 
-          {/* Upload de Imagem ou Link */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
+          {/* Mídia da Postagem: Imagem ou Vídeo */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Imagem da Postagem (Opcional)
+                Mídia da Postagem (Opcional)
               </label>
+
+              {/* Seletor de Tipo de Mídia: Imagem vs Vídeo */}
               <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
                 <button
                   type="button"
-                  onClick={() => setImageInputMode('upload')}
-                  className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
-                    imageInputMode === 'upload'
+                  onClick={() => setMediaType('image')}
+                  className={`flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+                    mediaType === 'image'
                       ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
                       : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
                   }`}
                 >
-                  Upload do PC
+                  <ImageIcon className="w-3.5 h-3.5" />
+                  <span>Imagem</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => setImageInputMode('url')}
-                  className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
-                    imageInputMode === 'url'
+                  onClick={() => setMediaType('video')}
+                  className={`flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-md transition-all ${
+                    mediaType === 'video'
                       ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
                       : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
                   }`}
                 >
-                  Link Web
+                  <Video className="w-3.5 h-3.5 text-brand-wine" />
+                  <span>Vídeo</span>
                 </button>
               </div>
             </div>
 
-            {imageInputMode === 'upload' ? (
+            {/* SEÇÃO DE IMAGEM */}
+            {mediaType === 'image' && (
               <div>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileInputChange}
-                  accept="image/png,image/jpeg,image/webp,image/gif"
-                  className="hidden"
-                />
-                {!imageUrl ? (
-                  <div
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-colors ${
-                      isDragging
-                        ? 'border-ambozini bg-ambozini/10'
-                        : 'border-slate-200 dark:border-slate-700 hover:border-ambozini/50 hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                    }`}
-                  >
-                    <UploadCloud className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                    <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                      Clique para escolher imagem ou arraste o arquivo aqui
-                    </p>
-                    <p className="text-[11px] text-slate-400 mt-1">PNG, JPG ou WEBP até 5MB</p>
-                  </div>
-                ) : (
-                  <div className="relative rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-50 dark:bg-slate-800 p-2.5 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={imageUrl}
-                        alt="Preview"
-                        className="w-14 h-14 rounded-lg object-cover border border-slate-200 dark:border-slate-700"
-                      />
-                      <div>
-                        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                          {uploadFileName || 'Imagem selecionada'}
-                        </div>
-                        {uploadFileSize && (
-                          <p className="text-[11px] text-slate-400 mt-0.5">{uploadFileSize}</p>
-                        )}
-                      </div>
-                    </div>
+                <div className="flex items-center justify-end mb-2">
+                  <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
                     <button
                       type="button"
-                      onClick={handleRemoveImage}
-                      className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors"
-                      title="Remover imagem"
+                      onClick={() => setImageInputMode('upload')}
+                      className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
+                        imageInputMode === 'upload'
+                          ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                          : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                      }`}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      Upload do PC
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setImageInputMode('url')}
+                      className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
+                        imageInputMode === 'url'
+                          ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                          : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      Link Web
+                    </button>
+                  </div>
+                </div>
+
+                {imageInputMode === 'upload' ? (
+                  <div>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileInputChange}
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      className="hidden"
+                    />
+                    {!imageUrl ? (
+                      <div
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        onClick={() => fileInputRef.current?.click()}
+                        className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-colors ${
+                          isDragging
+                            ? 'border-ambozini bg-ambozini/10'
+                            : 'border-slate-200 dark:border-slate-700 hover:border-ambozini/50 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                        }`}
+                      >
+                        <UploadCloud className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                        <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                          Clique para escolher imagem ou arraste o arquivo aqui
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-1">PNG, JPG ou WEBP até 15MB</p>
+                      </div>
+                    ) : (
+                      <div className="relative rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-50 dark:bg-slate-800 p-2.5 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={imageUrl}
+                            alt="Preview"
+                            className="w-14 h-14 rounded-lg object-cover border border-slate-200 dark:border-slate-700"
+                          />
+                          <div>
+                            <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                              {uploadFileName || 'Imagem selecionada'}
+                            </div>
+                            {uploadFileSize && (
+                              <p className="text-[11px] text-slate-400 mt-0.5">{uploadFileSize}</p>
+                            )}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleRemoveImage}
+                          className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors"
+                          title="Remover imagem"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="url"
+                        value={imageUrl}
+                        onChange={(e) => setImageUrl(e.target.value)}
+                        placeholder="https://exemplo.com/foto.jpg"
+                        className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-ambozini"
+                      />
+                    </div>
+                    {imageUrl && (
+                      <div className="relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 max-h-36">
+                        <img src={imageUrl} alt="Preview" className="w-full h-36 object-cover" />
+                        <button
+                          type="button"
+                          onClick={handleRemoveImage}
+                          className="absolute top-2 right-2 p-1.5 bg-slate-900/80 text-white hover:bg-red-600 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="relative">
-                  <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input
-                    type="url"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    placeholder="https://exemplo.com/foto.jpg"
-                    className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-ambozini"
-                  />
-                </div>
-                {imageUrl && (
-                  <div className="relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 max-h-36">
-                    <img src={imageUrl} alt="Preview" className="w-full h-36 object-cover" />
+            )}
+
+            {/* SEÇÃO DE VÍDEO (UPLOAD OU LINK) */}
+            {mediaType === 'video' && (
+              <div>
+                <div className="flex items-center justify-end mb-2">
+                  <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
                     <button
                       type="button"
-                      onClick={handleRemoveImage}
-                      className="absolute top-2 right-2 p-1.5 bg-slate-900/80 text-white hover:bg-red-600 rounded-lg transition-colors"
+                      onClick={() => setVideoInputMode('upload')}
+                      className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
+                        videoInputMode === 'upload'
+                          ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                          : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                      }`}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      Upload do PC
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setVideoInputMode('url')}
+                      className={`px-2.5 py-1 text-xs font-semibold rounded-md transition-all ${
+                        videoInputMode === 'url'
+                          ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                          : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                      }`}
+                    >
+                      Link (YouTube / Vimeo)
+                    </button>
+                  </div>
+                </div>
+
+                {videoInputMode === 'upload' ? (
+                  <div>
+                    <input
+                      type="file"
+                      ref={videoInputRef}
+                      onChange={handleVideoFileInputChange}
+                      accept="video/mp4,video/webm,video/ogg,video/quicktime"
+                      className="hidden"
+                    />
+                    {!videoUrl ? (
+                      <div
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        onClick={() => videoInputRef.current?.click()}
+                        className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-colors ${
+                          isDragging
+                            ? 'border-ambozini bg-ambozini/10'
+                            : 'border-slate-200 dark:border-slate-700 hover:border-ambozini/50 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                        }`}
+                      >
+                        <UploadCloud className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                        <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                          Clique para escolher vídeo ou arraste o arquivo aqui
+                        </p>
+                        <p className="text-[11px] text-slate-400 mt-1">MP4, WEBM ou MOV até 15MB</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="relative rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-50 dark:bg-slate-800 p-2.5 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <Video className="w-6 h-6 text-brand-wine" />
+                            <div>
+                              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                                {videoFileName || 'Vídeo carregado'}
+                              </div>
+                              {videoFileSize && (
+                                <p className="text-[11px] text-slate-400 mt-0.5">{videoFileSize}</p>
+                              )}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleRemoveVideo}
+                            className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors"
+                            title="Remover vídeo"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <div className="rounded-xl overflow-hidden max-h-56">
+                          <VideoPlayer url={videoUrl} controls={true} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="url"
+                        value={videoUrl}
+                        onChange={(e) => setVideoUrl(e.target.value)}
+                        placeholder="https://www.youtube.com/watch?v=... ou Vimeo / Loom"
+                        className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-ambozini"
+                      />
+                    </div>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Cole um link do YouTube (inclusive Shorts), Vimeo, Loom ou link direto para arquivo .mp4.
+                    </p>
+                    {videoUrl && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
+                          <span className="font-semibold">Prévia do Vídeo:</span>
+                          <button
+                            type="button"
+                            onClick={handleRemoveVideo}
+                            className="text-red-500 hover:underline flex items-center gap-1"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Limpar</span>
+                          </button>
+                        </div>
+                        <VideoPlayer url={videoUrl} controls={true} />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

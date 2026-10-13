@@ -4,6 +4,7 @@ import { ForumPost } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { usePortal } from '../../context/PortalContext';
 import { RichTextRenderer } from '../common/RichTextRenderer';
+import { VideoPlayer } from '../common/VideoPlayer';
 import { EditPostModal } from '../modals/EditPostModal';
 import { formatPostTimeAgo } from '../../utils/date';
 
@@ -214,7 +215,14 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onOpenDetail }) => {
             <div className="text-sm text-foreground/80 leading-relaxed line-clamp-3">
               <RichTextRenderer content={post.content} />
             </div>
-            {displayImage && (
+            {post.videoUrl ? (
+              <div
+                className="mt-3 rounded-xl overflow-hidden border border-border/40 shadow-sm"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <VideoPlayer url={post.videoUrl} title={post.title} controls={true} />
+              </div>
+            ) : displayImage ? (
               <div className="mt-3 rounded-xl overflow-hidden max-h-64 border border-border/40 shadow-sm">
                 <img
                   src={displayImage}
@@ -222,7 +230,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onOpenDetail }) => {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
-            )}
+            ) : null}
           </div>
         )}
       </div>

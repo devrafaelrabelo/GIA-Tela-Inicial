@@ -19,6 +19,7 @@ import { useAuth } from '../../context/AuthContext';
 import { usePortal } from '../../context/PortalContext';
 import { useModalDismiss } from '../../hooks/useModalDismiss';
 import { RichTextRenderer } from '../common/RichTextRenderer';
+import { VideoPlayer } from '../common/VideoPlayer';
 import { EditPostModal } from './EditPostModal';
 import { formatPostTimeAgo } from '../../utils/date';
 
@@ -301,11 +302,15 @@ export const PostDetailModal: React.FC<PostDetailModalProps> = ({ post, onClose 
                   <div className="space-y-4">
                     <RichTextRenderer content={activePost.content} className="text-foreground/90 text-sm leading-relaxed" />
 
-                    {displayImage && (
+                    {activePost.videoUrl ? (
+                      <div className="rounded-xl overflow-hidden border border-border/60 shadow-sm">
+                        <VideoPlayer url={activePost.videoUrl} title={activePost.title} controls={true} />
+                      </div>
+                    ) : displayImage ? (
                       <div className="rounded-xl overflow-hidden border border-border/60 shadow-sm max-h-96">
                         <img src={displayImage} alt={activePost.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                       </div>
-                    )}
+                    ) : null}
 
                     {/* Likes and stats */}
                     <div className="flex items-center gap-4 py-3 border-y border-border/50 text-xs">

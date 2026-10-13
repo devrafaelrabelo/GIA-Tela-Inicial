@@ -299,7 +299,9 @@ app.get('/api/posts', async (req, res) => {
       SELECT 
         id, target_card AS "targetCard", visibility, author, title, category,
         tag, created_at AS "createdAt", time_ago AS "timeAgo", content,
-        image_url AS "imageUrl", image_url AS image, likes, user_liked AS "userLiked",
+        image_url AS "imageUrl", image_url AS image,
+        video_url AS "videoUrl", video_type AS "videoType",
+        likes, user_liked AS "userLiked",
         is_liked AS "isLiked", comments_count AS "commentsCount", comments, pinned,
         is_active AS "isActive", audit_log AS "auditLog",
         COALESCE(timestamp, created_timestamp::text) AS "timestamp"
@@ -328,6 +330,8 @@ app.post('/api/posts', async (req, res) => {
     const timestamp = p.timestamp || new Date().toISOString();
     const content = p.content || '';
     const imageUrl = p.imageUrl || p.image || null;
+    const videoUrl = p.videoUrl || null;
+    const videoType = p.videoType || null;
     const likes = p.likes || 1;
     const userLiked = p.userLiked ?? true;
     const isLiked = p.isLiked ?? true;
@@ -350,16 +354,16 @@ app.post('/api/posts', async (req, res) => {
     await db.query(
       `INSERT INTO forum_posts (
         id, target_card, visibility, author, title, category, tag, created_at, time_ago,
-        content, image_url, likes, user_liked, is_liked, comments_count, comments, pinned,
+        content, image_url, video_url, video_type, likes, user_liked, is_liked, comments_count, comments, pinned,
         is_active, audit_log, timestamp, created_timestamp
       ) VALUES (
         $1, $2, $3, $4::jsonb, $5, $6, $7, $8, $9,
-        $10, $11, $12, $13, $14, $15, $16::jsonb, $17,
-        $18, $19::jsonb, $20, $21::timestamp
+        $10, $11, $12, $13, $14, $15, $16, $17, $18::jsonb, $19,
+        $20, $21::jsonb, $22, $23::timestamp
       );`,
       [
         id, targetCard, visibility, author, title, category, tag, createdAt, timeAgo,
-        content, imageUrl, likes, userLiked, isLiked, commentsCount, comments, pinned,
+        content, imageUrl, videoUrl, videoType, likes, userLiked, isLiked, commentsCount, comments, pinned,
         isActive, auditLog, timestamp, timestamp
       ]
     );
@@ -387,6 +391,14 @@ app.put('/api/posts/:id', async (req, res) => {
     if (p.imageUrl !== undefined || p.image !== undefined) {
       fields.push(`image_url = $${idx++}`);
       values.push(p.imageUrl !== undefined ? p.imageUrl : p.image);
+    }
+    if (p.videoUrl !== undefined) {
+      fields.push(`video_url = $${idx++}`);
+      values.push(p.videoUrl);
+    }
+    if (p.videoType !== undefined) {
+      fields.push(`video_type = $${idx++}`);
+      values.push(p.videoType);
     }
     if (p.pinned !== undefined) { fields.push(`pinned = $${idx++}`); values.push(!!p.pinned); }
     if (p.isActive !== undefined) { fields.push(`is_active = $${idx++}`); values.push(!!p.isActive); }

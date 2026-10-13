@@ -69,6 +69,8 @@ export function useForumState(
       content: postData.content || '',
       imageUrl: postData.imageUrl,
       image: postData.imageUrl,
+      videoUrl: postData.videoUrl,
+      videoType: postData.videoType,
       likes: 1,
       userLiked: true,
       commentsCount: 0,
@@ -119,6 +121,7 @@ export function useForumState(
     if (updated.category !== undefined && updated.category !== post.category) changedFields.push('categoria');
     if (updated.visibility !== undefined && updated.visibility !== post.visibility) changedFields.push('visibilidade');
     if (updated.imageUrl !== undefined && updated.imageUrl !== post.imageUrl) changedFields.push('imagem');
+    if (updated.videoUrl !== undefined && updated.videoUrl !== post.videoUrl) changedFields.push('vídeo');
 
     const newLog: AuditLogEntry = {
       id: crypto.randomUUID(),

@@ -6,7 +6,10 @@ import {
   Globe,
   Lock,
   Save,
-  Trash2
+  Trash2,
+  Video,
+  Image as ImageIcon,
+  Link as LinkIcon
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { usePortal } from '../../context/PortalContext';
@@ -14,6 +17,8 @@ import { ForumPost, Visibility } from '../../types';
 import { compressImageFile } from '../../utils/imageCompressor';
 import { useModalDismiss } from '../../hooks/useModalDismiss';
 import { RichTextEditor } from '../common/RichTextEditor';
+import { VideoPlayer } from '../common/VideoPlayer';
+import { readVideoFile } from '../../utils/video';
 
 interface EditPostModalProps {
   post: ForumPost | null;
@@ -39,9 +44,24 @@ export const EditPostModal: React.FC<EditPostModalProps> = ({ post, isOpen, onCl
   const [category, setCategory] = useState(post?.category || 'Geral');
   const [content, setContent] = useState(post?.content || '');
   const [visibility, setVisibility] = useState<Visibility>(post?.visibility || 'members_only');
+
+  // Mídia
+  const [mediaType, setMediaType] = useState<'image' | 'video'>(
+    post?.videoUrl ? 'video' : 'image'
+  );
   const [imageUrl, setImageUrl] = useState(post?.imageUrl || post?.image || '');
+  const [imageInputMode, setImageInputMode] = useState<'upload' | 'url'>('upload');
+
+  const [videoUrl, setVideoUrl] = useState(post?.videoUrl || '');
+  const [videoInputMode, setVideoInputMode] = useState<'upload' | 'url'>(
+    post?.videoUrl?.startsWith('data:video') ? 'upload' : 'url'
+  );
+  const [videoFileName, setVideoFileName] = useState('');
+  const [videoFileSize, setVideoFileSize] = useState('');
+
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   // Sincroniza campos quando post selecionado mudar
   React.useEffect(() => {
@@ -51,6 +71,13 @@ export const EditPostModal: React.FC<EditPostModalProps> = ({ post, isOpen, onCl
       setContent(post.content || '');
       setVisibility(post.visibility || 'members_only');
       setImageUrl(post.imageUrl || post.image || '');
+      setVideoUrl(post.videoUrl || '');
+      if (post.videoUrl) {
+        setMediaType('video');
+        setVideoInputMode(post.videoUrl.startsWith('data:video') ? 'upload' : 'url');
+      } else {
+        setMediaType('image');
+      }
     }
   }, [post]);
 
@@ -81,12 +108,59 @@ export const EditPostModal: React.FC<EditPostModalProps> = ({ post, isOpen, onCl
     }
   };
 
+  const processVideoFile = async (file: File) => {
+    const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|ogg|mov)$/i.test(file.name);
+    if (!isVideo) {
+      showToast('Selecione um formato de vídeo válido (.mp4, .webm, .ogg ou .mov).', 'error');
+      return;
+    }
+
+    if (file.size > 15 * 1024 * 1024) {
+      showToast('O vídeo excede o limite de 15MB. Para vídeos maiores, hospede no YouTube/Vimeo e use o link!', 'error');
+      return;
+    }
+
+    try {
+      const dataUrl = await readVideoFile(file);
+      setVideoUrl(dataUrl);
+      setVideoFileName(file.name);
+      const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+      setVideoFileSize(`${sizeMb} MB`);
+      showToast('Vídeo carregado com sucesso!', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Falha ao processar arquivo de vídeo.', 'error');
+    }
+  };
+
+  const handleRemoveVideo = () => {
+    setVideoUrl('');
+    setVideoFileName('');
+    setVideoFileSize('');
+    if (videoInputRef.current) videoInputRef.current.value = '';
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!title.trim() || !content.trim()) {
       showToast('Preencha o título e o conteúdo da postagem.', 'error');
       return;
+    }
+
+    let finalImageUrl: string | undefined = undefined;
+    let finalVideoUrl: string | undefined = undefined;
+    let finalVideoType: 'upload' | 'embed' | undefined = undefined;
+
+    if (mediaType === 'video') {
+      if (videoUrl.trim()) {
+        finalVideoUrl = videoUrl.trim();
+        finalVideoType = videoInputMode === 'upload' ? 'upload' : 'embed';
+      }
+    } else {
+      if (imageUrl.trim()) {
+        finalImageUrl = imageUrl.trim();
+      }
     }
 
     setIsSaving(true);
@@ -99,10 +173,12 @@ export const EditPostModal: React.FC<EditPostModalProps> = ({ post, isOpen, onCl
           tag: category,
           visibility,
           content: content.trim(),
-          imageUrl: imageUrl.trim() || undefined,
-          image: imageUrl.trim() || undefined
+          imageUrl: finalImageUrl,
+          image: finalImageUrl,
+          videoUrl: finalVideoUrl,
+          videoType: finalVideoType
         },
-        'Edição manual dos dados da publicação'
+        'Edição dos dados e mídias da publicação'
       );
       onClose();
     } catch (err) {
@@ -232,59 +308,261 @@ export const EditPostModal: React.FC<EditPostModalProps> = ({ post, isOpen, onCl
             />
           </div>
 
-          {/* Imagem de Capa */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-stone-700 dark:text-stone-300 flex items-center justify-between">
-              <span>Imagem de Capa (opcional)</span>
-              {imageUrl && (
+          {/* Mídia da Postagem: Imagem ou Vídeo */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-stone-700 dark:text-stone-300">
+                Mídia Anexada (opcional)
+              </label>
+
+              {/* Seletor Imagem vs Vídeo */}
+              <div className="flex bg-stone-100 dark:bg-stone-800 p-0.5 rounded-xl border border-stone-200 dark:border-stone-700">
                 <button
                   type="button"
-                  onClick={() => setImageUrl('')}
-                  className="text-[11px] text-rose-500 hover:underline cursor-pointer flex items-center gap-1"
+                  onClick={() => setMediaType('image')}
+                  className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                    mediaType === 'image'
+                      ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-white shadow-xs'
+                      : 'text-stone-500 hover:text-stone-800 dark:hover:text-stone-200'
+                  }`}
                 >
-                  <Trash2 size={11} />
-                  <span>Remover Imagem</span>
+                  <ImageIcon size={13} />
+                  <span>Imagem</span>
                 </button>
-              )}
-            </label>
-
-            {imageUrl ? (
-              <div className="relative rounded-2xl overflow-hidden border border-stone-200 dark:border-stone-800 max-h-48 group">
-                <img src={imageUrl} alt="Capa da postagem" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-stone-900 shadow-md cursor-pointer"
-                  >
-                    Substituir
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setMediaType('video')}
+                  className={`flex items-center gap-1.5 px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                    mediaType === 'video'
+                      ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-white shadow-xs'
+                      : 'text-stone-500 hover:text-stone-800 dark:hover:text-stone-200'
+                  }`}
+                >
+                  <Video size={13} className="text-[#7c172e]" />
+                  <span>Vídeo</span>
+                </button>
               </div>
-            ) : (
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="p-5 border-2 border-dashed border-stone-200 dark:border-stone-800 rounded-2xl text-center hover:border-[#7c172e] transition-colors cursor-pointer space-y-1"
-              >
-                <UploadCloud size={22} className="mx-auto text-stone-400" />
-                <p className="text-xs font-bold text-stone-700 dark:text-stone-300">
-                  Clique para selecionar uma imagem de capa
-                </p>
-                <p className="text-[10px] text-stone-400">PNG, JPG ou WEBP até 15MB</p>
+            </div>
+
+            {/* SEÇÃO IMAGEM */}
+            {mediaType === 'image' && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-stone-500">Escolha o formato de inserção</span>
+                  <div className="flex bg-stone-100 dark:bg-stone-800 p-0.5 rounded-lg border border-stone-200 dark:border-stone-700">
+                    <button
+                      type="button"
+                      onClick={() => setImageInputMode('upload')}
+                      className={`px-2.5 py-0.5 text-xs font-bold rounded-md transition-all ${
+                        imageInputMode === 'upload'
+                          ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-white shadow-xs'
+                          : 'text-stone-500 hover:text-stone-800'
+                      }`}
+                    >
+                      Arquivo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setImageInputMode('url')}
+                      className={`px-2.5 py-0.5 text-xs font-bold rounded-md transition-all ${
+                        imageInputMode === 'url'
+                          ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-white shadow-xs'
+                          : 'text-stone-500 hover:text-stone-800'
+                      }`}
+                    >
+                      Link Web
+                    </button>
+                  </div>
+                </div>
+
+                {imageInputMode === 'upload' ? (
+                  <div>
+                    {imageUrl ? (
+                      <div className="relative rounded-2xl overflow-hidden border border-stone-200 dark:border-stone-800 max-h-48 group">
+                        <img src={imageUrl} alt="Capa da postagem" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-stone-900 shadow-md cursor-pointer"
+                          >
+                            Substituir
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setImageUrl('')}
+                            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-red-600 text-white shadow-md cursor-pointer"
+                          >
+                            Remover
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="p-5 border-2 border-dashed border-stone-200 dark:border-stone-800 rounded-2xl text-center hover:border-[#7c172e] transition-colors cursor-pointer space-y-1"
+                      >
+                        <UploadCloud size={22} className="mx-auto text-stone-400" />
+                        <p className="text-xs font-bold text-stone-700 dark:text-stone-300">
+                          Clique para selecionar uma imagem de capa
+                        </p>
+                        <p className="text-[10px] text-stone-400">PNG, JPG ou WEBP até 15MB</p>
+                      </div>
+                    )}
+
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          processImageFile(e.target.files[0]);
+                        }
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+                      <input
+                        type="url"
+                        value={imageUrl}
+                        onChange={(e) => setImageUrl(e.target.value)}
+                        placeholder="https://exemplo.com/foto.jpg"
+                        className="w-full pl-10 pr-3.5 py-2 text-xs rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-[#7c172e]"
+                      />
+                    </div>
+                    {imageUrl && (
+                      <div className="relative rounded-2xl overflow-hidden border border-stone-200 dark:border-stone-800 max-h-40">
+                        <img src={imageUrl} alt="Preview" className="w-full h-40 object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setImageUrl('')}
+                          className="absolute top-2 right-2 p-1.5 bg-black/70 text-white hover:bg-red-600 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                if (e.target.files && e.target.files[0]) {
-                  processImageFile(e.target.files[0]);
-                }
-              }}
-            />
+            {/* SEÇÃO VÍDEO */}
+            {mediaType === 'video' && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-stone-500">Forma de anexar vídeo</span>
+                  <div className="flex bg-stone-100 dark:bg-stone-800 p-0.5 rounded-lg border border-stone-200 dark:border-stone-700">
+                    <button
+                      type="button"
+                      onClick={() => setVideoInputMode('upload')}
+                      className={`px-2.5 py-0.5 text-xs font-bold rounded-md transition-all ${
+                        videoInputMode === 'upload'
+                          ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-white shadow-xs'
+                          : 'text-stone-500 hover:text-stone-800'
+                      }`}
+                    >
+                      Arquivo (PC)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setVideoInputMode('url')}
+                      className={`px-2.5 py-0.5 text-xs font-bold rounded-md transition-all ${
+                        videoInputMode === 'url'
+                          ? 'bg-white dark:bg-stone-700 text-stone-900 dark:text-white shadow-xs'
+                          : 'text-stone-500 hover:text-stone-800'
+                      }`}
+                    >
+                      Link Web
+                    </button>
+                  </div>
+                </div>
+
+                {videoInputMode === 'upload' ? (
+                  <div>
+                    <input
+                      ref={videoInputRef}
+                      type="file"
+                      accept="video/mp4,video/webm,video/ogg,video/quicktime"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          processVideoFile(e.target.files[0]);
+                        }
+                      }}
+                    />
+                    {!videoUrl ? (
+                      <div
+                        onClick={() => videoInputRef.current?.click()}
+                        className="p-5 border-2 border-dashed border-stone-200 dark:border-stone-800 rounded-2xl text-center hover:border-[#7c172e] transition-colors cursor-pointer space-y-1"
+                      >
+                        <UploadCloud size={22} className="mx-auto text-stone-400" />
+                        <p className="text-xs font-bold text-stone-700 dark:text-stone-300">
+                          Clique para selecionar um vídeo (.mp4, .webm)
+                        </p>
+                        <p className="text-[10px] text-stone-400">Até 15MB de tamanho</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between p-2 rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-900 text-xs">
+                          <div className="flex items-center gap-2">
+                            <Video size={16} className="text-[#7c172e]" />
+                            <span className="font-semibold text-stone-800 dark:text-stone-200">
+                              {videoFileName || 'Vídeo anexado'}
+                            </span>
+                            {videoFileSize && <span className="text-stone-400">({videoFileSize})</span>}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleRemoveVideo}
+                            className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                        <VideoPlayer url={videoUrl} controls={true} />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+                      <input
+                        type="url"
+                        value={videoUrl}
+                        onChange={(e) => setVideoUrl(e.target.value)}
+                        placeholder="https://www.youtube.com/watch?v=... ou Vimeo / Loom"
+                        className="w-full pl-10 pr-3.5 py-2 text-xs rounded-xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 focus:outline-none focus:ring-2 focus:ring-[#7c172e]"
+                      />
+                    </div>
+                    <p className="text-[11px] text-stone-500">
+                      Suporta YouTube, Shorts, Vimeo, Loom ou links diretos MP4.
+                    </p>
+                    {videoUrl && (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-stone-700 dark:text-stone-300">Prévia do Vídeo:</span>
+                          <button
+                            type="button"
+                            onClick={handleRemoveVideo}
+                            className="text-red-500 hover:underline flex items-center gap-1"
+                          >
+                            <Trash2 size={12} />
+                            <span>Remover</span>
+                          </button>
+                        </div>
+                        <VideoPlayer url={videoUrl} controls={true} />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </form>
 

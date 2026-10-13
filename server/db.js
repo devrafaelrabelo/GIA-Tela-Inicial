@@ -170,6 +170,8 @@ export async function initDatabase() {
   await db.query(`ALTER TABLE forum_posts ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;`);
   await db.query(`ALTER TABLE forum_posts ADD COLUMN IF NOT EXISTS audit_log JSONB DEFAULT '[]'::jsonb;`);
   await db.query(`ALTER TABLE forum_posts ADD COLUMN IF NOT EXISTS timestamp TEXT;`);
+  await db.query(`ALTER TABLE forum_posts ADD COLUMN IF NOT EXISTS video_url TEXT;`);
+  await db.query(`ALTER TABLE forum_posts ADD COLUMN IF NOT EXISTS video_type TEXT;`);
 
   // Backfill de status e log de criação para postagens e comunicados que ainda não possuem
   await db.query(`

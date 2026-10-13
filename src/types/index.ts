@@ -255,6 +255,8 @@ export interface ForumPost {
   content: string;
   image?: string;
   imageUrl?: string;
+  videoUrl?: string;
+  videoType?: 'upload' | 'embed';
   likes: number;
   userLiked?: boolean;
   commentsCount?: number;
